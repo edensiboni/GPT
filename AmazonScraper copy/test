@@ -1,0 +1,41 @@
+        # search on Amazon.ca
+        url = f'https://www.amazon.ca/s?k={name}'
+        soup = await get_soup(url)
+        link = soup.select_one('div[data-asin]')
+        if link is not None:
+            asin = link['data-asin']
+            product_name = link.select_one('span.a-text-normal').text
+        else:
+            asin = None
+            product_name = name
+
+        # get prices on Amazon.com, Amazon.co.uk, Amazon.de, and Amazon.ca
+        tasks = []
+        if asin is not None:
+            tasks.append(get_price('Amazon.com', 'https://www.amazon.com/dp/' + asin))
+            tasks.append(get_price('Amazon.co.uk', 'https://www.amazon.co.uk/dp/' + asin))
+            tasks.append(get_price('Amazon.de', 'https://www.amazon.de/dp/' + asin))
+            tasks.append(get_price('Amazon.ca', 'https://www.amazon.ca/dp/' + asin))
+        else:
+            tasks.append(get_price('Amazon.com', 'https://www.amazon.com/s?k=' + name))
+            tasks.append(get_price('Amazon.co.uk', 'https://www.amazon.co.uk/s?k=' + name))
+            tasks.append(get_price('Amazon.de', 'https://www.amazon.de/s?k=' + name))
+            tasks.append(get_price('Amazon.ca', 'https://www.amazon.ca/s?k=' + name))
+        results = await asyncio.gather(*tasks)
+
+        # convert prices to USD and display them in a table
+        table = '<table><tr><th>Item</th><th>Rating</th><th>Amazon.com</th><th>Amazon.co.uk</th><th>Amazon.de</th><th>Amazon.ca</th></tr>'
+        for result in results:
+            if result is None:
+                continue
+            website, rating, price = result
+            price_usd = convert_currency(price, website)
+            table += f'<tr><td>{product_name}</td><td>{rating}</td>'
+            for i in range(len(price_usd)):
+                if price_usd[i] is None:
+                    table += '<td>N/A</td>'
+                else:
+                    table += f'<td><a href="{result_urls[website]}" target="_blank">{price_usd[i]:.2f}</a></td>'
+            table += '</tr>'
+        table += '</table>'
+        return table
