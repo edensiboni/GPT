@@ -13,6 +13,8 @@ conn = sqlite3.connect('database.db')
 print('Database created')
 conn.execute('CREATE TABLE IF NOT EXISTS searches (id INTEGER PRIMARY KEY AUTOINCREMENT, keyword TEXT, asin TEXT, rating TEXT, price_usd TEXT, price_ca TEXT, price_uk TEXT, price_de TEXT)')
 print('Table created')
+
+
 conn.close()
 
 
@@ -33,6 +35,7 @@ def search():
         return jsonify(results)
     return jsonify([])
 
+app.run()
 
 async def get_search_results(query):
     headers = {
